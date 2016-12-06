@@ -1,0 +1,137 @@
+#!/bin/bash
+usage(){
+	fmt <<EOF
+DESCRIPTION
+	Initialize a new Project Gutenberg ebook project repository in the target directories, and create corresponding repositories on GitHub.
+
+	This script must be run by a Unix user who has chmod permissions on the target directories.
+
+	A GitHub account is not required to run this script and create a GitHub repo.
+
+USAGE
+	init-pg-repo DIRECTORY [DIRECTORY...]
+EOF
+	exit
+}
+die(){ printf "Error: ${1}\n" 1>&2; exit 1; }
+require(){ command -v $1 > /dev/null 2>&1 || { suggestion=""; if [ ! -z "$2" ]; then suggestion=" $2"; fi; die "$1 is not installed.${suggestion}"; } }
+if [ $# -eq 1 ]; then if [ "$1" = "--help" -o "$1" = "-h" ]; then usage; fi fi
+#End boilerplate
+
+#Check for dependencies
+require "xpath" "Try: apt-get install libxml-xpath-perl"
+
+dirs=""
+token="497a6a3a2075f18a3aeea6d7bd01fa79759a7f3a"
+
+while [ $# -gt 0 ]
+do
+	case "$1" in
+		*)
+			dirs=$(printf "%s\n%s" "${dirs}" "$1")
+		;;
+	esac
+	shift
+done
+
+printf "%s\n" "${dirs}" | while IFS= read -r i;
+do
+	if [ "${i}" = "" ]; then
+		continue
+	fi
+
+	targetDir="$(realpath "${i%/}")"
+
+	cd "${targetDir}"
+
+	#Repo name will simply be the ebook number
+	#We guess the ebook number by looking at the first text file we see
+	ebookNumber=$(ls *.txt | grep -E --only-matching "^[0-9]+\.txt" | head -n 1 | sed "s/\.txt//g")
+
+	if [ "${ebookNumber}" = "" ]; then
+		die "Couldn't get ebook number for ${targetDir}; got ${ebookNumber}"
+	fi
+
+	if ! [[ "${ebookNumber}" =~ ^[0-9]+$ ]] ; then
+		die "Couldn't get ebook number for ${targetDir}; got ${ebookNumber}"
+	fi
+
+	echo "Processing ebook #${ebookNumber}"
+
+	#Try to find the ebook name and author
+	ebookName=$(grep -E --only-matching "<dcterms:title>[^<]+?<\/dcterms:title>" "/data/crowd/cache/epub/${ebookNumber}/pg${ebookNumber}.rdf" | sed -E "s/<[^>]+?>//g")
+
+	if [ "${ebookName}" = "" ]; then
+		die "Couldn't get ebook name"
+	fi
+
+	ebookAuthor=$(grep -E --only-matching "<pgterms:alias>[^<]+?<\/pgterms:alias>" "/data/crowd/cache/epub/${ebookNumber}/pg${ebookNumber}.rdf" | head -n 1 | sed -E "s/<[^>]+?>//g")
+
+	if [ "${ebookAuthor}" = "" ]; then
+		ebookAuthor=$(xpath -e "string(//dcterms:creator//pgterms:name)" "/data/crowd/cache/epub/${ebookNumber}/pg${ebookNumber}.rdf" 2> /dev/null)
+	fi
+
+	if [ "${ebookAuthor}" = "" ]; then
+		die "Couldn't get ebook author"
+	fi
+
+	#Initialize the Git repo
+	#We have to pass the --shared option so that group filesystem permissions are respected
+	git init --shared --quiet
+
+	#Create a .gitignore file
+	cat <<- EOF > "${targetDir}/.gitignore"
+	old
+	*.zip
+	EOF
+
+	git add --all
+
+	git commit --quiet --message "Initial commit"
+
+	if [ $? -ne 0 ]; then
+		die "Couldn't perform Git initial commit"
+	fi
+
+	#Set up some Git hooks to automate GitHub integration
+	#When we commit to this repo, push to GitHub automatically
+	cat <<- EOF > "${targetDir}/.git/hooks/post-commit"
+	#!/bin/bash
+	git push --quiet github
+	EOF
+
+	#When we pull from remote, make sure Git didn't mess up our permissions
+	cat <<- EOF > "${targetDir}/.git/hooks/post-merge"
+	#!/bin/bash
+	chmod -R g+ws .
+	EOF
+
+	cp "${targetDir}/.git/hooks/post-merge" "${targetDir}/.git/hooks/post-checkout"
+
+	chmod +x "${targetDir}/.git/hooks/post-commit"
+	chmod +x "${targetDir}/.git/hooks/post-merge"
+	chmod +x "${targetDir}/.git/hooks/post-checkout"
+
+	#Set the correct group for this repo
+	sudo chgrp -R committers "${targetDir}/"
+
+	#Set the sticky bit so new files get created with the `committers` group
+	sudo chmod -R g+s "${targetDir}/"
+
+	#Create a GitHub repo
+	output=$(curl --silent --include --user "gutenbergbooks-bot:${token}" https://api.github.com/orgs/gutenbergbooks/repos --data "{\"name\":\"${ebookNumber}\", \"homepage\":\"https://www.gutenberg.org/ebooks/${ebookNumber}\", \"has_downloads\":false, \"has_wiki\":false, \"description\":\"Source for the Project Gutenberg edition of ${ebookName}, by ${ebookAuthor}\"}")
+
+	echo "${output}" | grep -q -i "201 Created"
+	if [ $? -eq 0 ]; then
+		git remote add github "https://gutenbergbooks-bot:${token}@github.com/gutenbergbooks/${ebookNumber}.git"
+
+		#Set git to automatically push to Github
+		git config branch.master.remote github
+		git config branch.master.merge refs/heads/master
+
+		git push --quiet github
+	else
+		echo "Error creating GitHub repo ${ebookNumber}:" 1>&2
+		die "${output}"
+	fi
+done
