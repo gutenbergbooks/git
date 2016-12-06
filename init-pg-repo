@@ -102,10 +102,15 @@ do
 
 	#Set up some Git hooks to automate GitHub integration
 	#When we commit to this repo, push to GitHub automatically
+	#(Local user makes a local commit -> push commit to GitHub)
 	cat <<- EOF > "${targetDir}/.git/hooks/post-commit"
 	#!/bin/bash
 	git push --quiet github
 	EOF
+
+	#Do the same on post-receive
+	#(Remote non-GitHub user does git push into our local repo -> push changes to GitHub)
+	cp "${targetDir}/.git/hooks/post-commit" "${targetDir}/.git/hooks/post-receive"
 
 	#When we pull from remote, make sure Git didn't mess up our permissions
 	cat <<- EOF > "${targetDir}/.git/hooks/post-merge"
@@ -113,11 +118,13 @@ do
 	chmod -R g+ws .
 	EOF
 
+	#And when we switch branches too
 	cp "${targetDir}/.git/hooks/post-merge" "${targetDir}/.git/hooks/post-checkout"
 
 	chmod +x "${targetDir}/.git/hooks/post-commit"
 	chmod +x "${targetDir}/.git/hooks/post-merge"
 	chmod +x "${targetDir}/.git/hooks/post-checkout"
+	chmod +x "${targetDir}/.git/hooks/post-receive"
 
 	#Set the correct group for this repo
 	sudo chgrp -R committers "${targetDir}/"
