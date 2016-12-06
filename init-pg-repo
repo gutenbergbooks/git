@@ -44,6 +44,10 @@ do
 
 	cd "${targetDir}"
 
+	if [ -d ".git" ]; then
+		die "Already a Git repo: ${target}"
+	fi
+
 	#Repo name will simply be the ebook number
 	#We guess the ebook number by looking at the first text file we see
 	ebookNumber=$(ls *.txt | grep -E --only-matching "^[0-9]+\.txt" | head -n 1 | sed "s/\.txt//g")
