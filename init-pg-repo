@@ -22,7 +22,7 @@ if [ $# -eq 1 ]; then if [ "$1" = "--help" -o "$1" = "-h" ]; then usage; fi fi
 require "xpath" "Try: apt-get install libxml-xpath-perl"
 
 dirs=""
-token="497a6a3a2075f18a3aeea6d7bd01fa79759a7f3a"
+token="497a6a3a2075f18a3aeea6d7bd01fa79759a7f3a" #Personal access token for the GitHub gutenbergbooks-bot user
 
 while [ $# -gt 0 ]
 do
