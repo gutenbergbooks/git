@@ -83,6 +83,9 @@ do
 	#We have to pass the --shared option so that group filesystem permissions are respected
 	git init --shared --quiet
 
+	#Allow remote repositories to push to this one, even though we aren't a bare repo
+	git config receive.denyCurrentBranch updateInstead
+
 	#Create a .gitignore file
 	cat <<- EOF > "${targetDir}/.gitignore"
 	old
