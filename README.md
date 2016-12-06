@@ -10,6 +10,10 @@ To assist in persisting permissions, the `post-merge` and `post-checkout` hooks 
 
 Use the `/data/git/init-pg-repo` script to initialze one or more Git repos.  This script automatically creates the hooks described above, connects to GitHub to create the corresponding repository, and sets up remote branch information.  The script uses credentials for the `gutenbergbooks-bot` GitHub user (see below for details), so you don't need to have a GitHub account to run this script.  It does, however, require `chmod` permission (typically requiring `sudo`) in order to set repository permissions.
 
+##Quirks
+
+Since the Gutenberg ebook build workflow is long-established, we can't use bare Git repositories on our ebooks.  So, to allow contributors not using GitHub to push changes back our local repositories, each one is initialized with `git config receive.denyCurrentBranch updateInstead`.
+
 ##Project Gutenberg and GitHub
 
 Local repositories each have a corresponding GitHub repository, named after the ebook ID number, and a remote branch, named `github`, linked to that GitHub repository.  Thus, `git push github` pushes changes from the local repository to the corresponding GitHub repository.
