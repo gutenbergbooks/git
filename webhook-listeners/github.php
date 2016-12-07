@@ -1,9 +1,9 @@
 <?php
 /*
-For more information on how PG Git repos are handled, and on how they interact with GitHub, see tools/README.md
+For more information on how PG Git repos are handled, and on how they interact with GitHub, see /data/git/README.md
 */
 
-define(GITHUB_SECRET, '58c5250321d487f68e6138617ea57044530159e7'); //Set in the GitHub Gutenberg global webhook settings.
+define(GITHUB_SECRET_FILE_PATH, '/data/git/secrets/gutenbergbooks-github-secret'); //Set in the GitHub gutenbergbooks global webhook settings.
 define(WEBHOOK_LOG_FILE_PATH, '/data/git/webhooks-github.log'); //Must be writable by www-data user.
 define(GUTENBERG_REPO_ROOT, '/data/htdocs/gutenberg/'); //Include trailing slash!
 
@@ -39,7 +39,7 @@ try{
 			$hashAlgorithm = $splitHash[0];
 			$hash = $splitHash[1];
 
-			if(!hash_equals($hash, hash_hmac($hashAlgorithm, $post, GITHUB_SECRET))){
+			if(!hash_equals($hash, hash_hmac($hashAlgorithm, $post, preg_replace("/[\r\n]/ius", "", file_get_contents(GITHUB_SECRET_FILE_PATH))))){
 				throw new WebhookException();
 			}
 		}
