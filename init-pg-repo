@@ -80,18 +80,24 @@ do
 		die "Couldn't get ebook author"
 	fi
 
+	#Create a .gitignore file
+	cat <<- EOF > "${targetDir}/.gitignore"
+	old
+	*.zip
+	EOF
+
+	#Set the correct group for this repo
+	sudo chown -R gutenbergbooks-github-bot:committers "${targetDir}/"
+
+	#Set the sticky bit so new files get created with the `committers` group
+	sudo chmod -R ug+ws "${targetDir}/"
+
 	#Initialize the Git repo
 	#We have to pass the --shared option so that group filesystem permissions are respected
 	git init --shared --quiet
 
 	#Allow remote repositories to push to this one, even though we aren't a bare repo
 	git config receive.denyCurrentBranch updateInstead
-
-	#Create a .gitignore file
-	cat <<- EOF > "${targetDir}/.gitignore"
-	old
-	*.zip
-	EOF
 
 	git add --all
 
@@ -116,7 +122,7 @@ do
 	#When we pull from remote, make sure Git didn't mess up our permissions
 	cat <<- EOF > "${targetDir}/.git/hooks/post-merge"
 	#!/bin/bash
-	chmod -R g+ws .
+	chmod -R ug+ws .
 	EOF
 
 	#And when we switch branches too
@@ -127,11 +133,11 @@ do
 	chmod +x "${targetDir}/.git/hooks/post-checkout"
 	chmod +x "${targetDir}/.git/hooks/post-receive"
 
-	#Set the correct group for this repo
-	sudo chgrp -R committers "${targetDir}/"
+	#Set new files Git created
+	sudo chown -R gutenbergbooks-github-bot:committers "${targetDir}/.git/"
 
 	#Set the sticky bit so new files get created with the `committers` group
-	sudo chmod -R g+ws "${targetDir}/"
+	sudo chmod -R ug+ws "${targetDir}/.git/"
 
 	#Create a GitHub repo
 	output=$(curl --silent --include --user "${githubUser}:${githubToken}" https://api.github.com/orgs/gutenbergbooks/repos --data "{\"name\":\"${ebookNumber}\", \"homepage\":\"https://www.gutenberg.org/ebooks/${ebookNumber}\", \"has_downloads\":false, \"has_wiki\":false, \"description\":\"Source for the Project Gutenberg edition of ${ebookName}, by ${ebookAuthor}\"}")
