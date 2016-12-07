@@ -22,7 +22,8 @@ if [ $# -eq 1 ]; then if [ "$1" = "--help" -o "$1" = "-h" ]; then usage; fi fi
 require "xpath" "Try: apt-get install libxml-xpath-perl"
 
 dirs=""
-token="497a6a3a2075f18a3aeea6d7bd01fa79759a7f3a" #Personal access token for the GitHub gutenbergbooks-bot user
+githubUser="gutenbergbooks-github-bot"
+githubToken="497a6a3a2075f18a3aeea6d7bd01fa79759a7f3a" #Personal access token for the GitHub gutenbergbooks-github-bot user
 
 while [ $# -gt 0 ]
 do
@@ -133,7 +134,7 @@ do
 	sudo chmod -R g+ws "${targetDir}/"
 
 	#Create a GitHub repo
-	output=$(curl --silent --include --user "gutenbergbooks-bot:${token}" https://api.github.com/orgs/gutenbergbooks/repos --data "{\"name\":\"${ebookNumber}\", \"homepage\":\"https://www.gutenberg.org/ebooks/${ebookNumber}\", \"has_downloads\":false, \"has_wiki\":false, \"description\":\"Source for the Project Gutenberg edition of ${ebookName}, by ${ebookAuthor}\"}")
+	output=$(curl --silent --include --user "${githubUser}:${githubToken}" https://api.github.com/orgs/gutenbergbooks/repos --data "{\"name\":\"${ebookNumber}\", \"homepage\":\"https://www.gutenberg.org/ebooks/${ebookNumber}\", \"has_downloads\":false, \"has_wiki\":false, \"description\":\"Source for the Project Gutenberg edition of ${ebookName}, by ${ebookAuthor}\"}")
 
 	echo "${output}" | grep -q -i "201 Created"
 	if [ $? -eq 0 ]; then
