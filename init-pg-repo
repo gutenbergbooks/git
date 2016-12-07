@@ -2,14 +2,16 @@
 usage(){
 	fmt <<EOF
 DESCRIPTION
-	Initialize a new Project Gutenberg ebook project repository in the target directories, and create corresponding repositories on GitHub.
+	Initialize a new Project Gutenberg ebook repository for the given ebook IDs, and create corresponding repositories on GitHub.
+
+	Given an ebook ID, this script will work on the corresponding directory in the Project Gutenberg ebook directory structure.  See /data/htdocs/gutenberg/README for an explanation of the directory layout.
 
 	This script must be run by a Unix user in the 'committers' group, who has chmod and chgrp permissions on the target directories.
 
 	A GitHub account is not required to run this script.
 
 USAGE
-	init-pg-repo DIRECTORY [DIRECTORY...]
+	init-pg-repo EBOOKID [EBOOKID...]
 EOF
 	exit
 }
@@ -21,7 +23,8 @@ if [ $# -eq 1 ]; then if [ "$1" = "--help" -o "$1" = "-h" ]; then usage; fi fi
 #Check for dependencies
 require "xpath" "Try: apt-get install libxml-xpath-perl"
 
-dirs=""
+ebookIds=""
+gutenbergRepoRoot="/data/htdocs/gutenberg/" #Include trailing slash!
 githubUser="gutenbergbooks-github-bot"
 githubToken=$(cat "/data/git/secrets/gutenbergbooks-github-bot-authentication-token") #Personal access token for the GitHub gutenbergbooks-github-bot user
 
@@ -34,51 +37,49 @@ while [ $# -gt 0 ]
 do
 	case "$1" in
 		*)
-			dirs=$(printf "%s\n%s" "${dirs}" "$1")
+			ebookIds=$(printf "%s\n%s" "${ebookIds}" "$1")
 		;;
 	esac
 	shift
 done
 
-printf "%s\n" "${dirs}" | while IFS= read -r i;
+printf "%s\n" "${ebookIds}" | while IFS= read -r ebookId;
 do
-	if [ "${i}" = "" ]; then
+	if [ "${ebookId}" = "" ]; then
 		continue
 	fi
 
-	targetDir="$(realpath "${i%/}")"
+	if ! [[ "${ebookId}" =~ ^[0-9]+$ ]]; then
+		die "Ebook ID is not a number: ${ebookId}"
+	fi
+
+	#Generate a path to the target ebook's home directory
+	targetDir=$(/data/git/pgpath.pl "${ebookId}")
+	targetDir="${gutenbergRepoRoot}${targetDir}${ebookId}"
+
+	if [ ! -d "${targetDir}" ]; then
+		die "Couldn't locate directory for ebook #${ebookId} in ${targetDir}"
+	fi
 
 	cd "${targetDir}"
 
 	if [ -d ".git" ]; then
-		die "Already a Git repo: ${target}"
+		die "Already a Git repo: ${targetDir}"
 	fi
 
-	#Repo name will simply be the ebook number
-	#We guess the ebook number by looking at the first text file we see
-	ebookNumber=$(ls *.txt | grep --extended-regexp --only-matching "^[0-9]+\.txt" | head -n 1 | sed "s/\.txt//g")
-
-	if [ "${ebookNumber}" = "" ]; then
-		die "Couldn't get ebook number for ${targetDir}; got ${ebookNumber}"
-	fi
-
-	if ! [[ "${ebookNumber}" =~ ^[0-9]+$ ]] ; then
-		die "Couldn't get ebook number for ${targetDir}; got ${ebookNumber}"
-	fi
-
-	echo "Processing ebook #${ebookNumber}"
+	echo "Processing ebook #${ebookId}"
 
 	#Try to find the ebook name and author
-	ebookName=$(grep --extended-regexp --only-matching "<dcterms:title>[^<]+?<\/dcterms:title>" "/data/crowd/cache/epub/${ebookNumber}/pg${ebookNumber}.rdf" | sed -E "s/<[^>]+?>//g")
+	ebookName=$(grep --extended-regexp --only-matching "<dcterms:title>[^<]+?<\/dcterms:title>" "/data/crowd/cache/epub/${ebookId}/pg${ebookId}.rdf" | sed -E "s/<[^>]+?>//g")
 
 	if [ "${ebookName}" = "" ]; then
 		die "Couldn't get ebook name"
 	fi
 
-	ebookAuthor=$(grep --extended-regexp --only-matching "<pgterms:alias>[^<]+?<\/pgterms:alias>" "/data/crowd/cache/epub/${ebookNumber}/pg${ebookNumber}.rdf" | head -n 1 | sed -E "s/<[^>]+?>//g")
+	ebookAuthor=$(grep --extended-regexp --only-matching "<pgterms:alias>[^<]+?<\/pgterms:alias>" "/data/crowd/cache/epub/${ebookId}/pg${ebookId}.rdf" | head -n 1 | sed -E "s/<[^>]+?>//g")
 
 	if [ "${ebookAuthor}" = "" ]; then
-		ebookAuthor=$(xpath -e "string(//dcterms:creator//pgterms:name)" "/data/crowd/cache/epub/${ebookNumber}/pg${ebookNumber}.rdf" 2> /dev/null)
+		ebookAuthor=$(xpath -e "string(//dcterms:creator//pgterms:name)" "/data/crowd/cache/epub/${ebookId}/pg${ebookId}.rdf" 2> /dev/null)
 	fi
 
 	if [ "${ebookAuthor}" = "" ]; then
@@ -112,6 +113,9 @@ do
 		die "Couldn't perform Git initial commit"
 	fi
 
+	#Remove unused hooks
+	rm -f "${targetDir}"/.git/hooks/*.sample
+
 	#Set up some Git hooks to automate GitHub integration
 	#When we commit to this repo, push to GitHub automatically
 	#(Local user makes a local commit -> push commit to GitHub)
@@ -138,11 +142,11 @@ do
 	sudo chmod --recursive ug+ws "${targetDir}/.git/"
 
 	#Create a GitHub repo
-	output=$(curl --silent --include --user "${githubUser}:${githubToken}" https://api.github.com/orgs/gutenbergbooks/repos --data "{\"name\":\"${ebookNumber}\", \"homepage\":\"https://www.gutenberg.org/ebooks/${ebookNumber}\", \"has_downloads\":false, \"has_wiki\":false, \"description\":\"Source for the Project Gutenberg edition of ${ebookName}, by ${ebookAuthor}\"}")
+	output=$(curl --silent --include --user "${githubUser}:${githubToken}" https://api.github.com/orgs/gutenbergbooks/repos --data "{\"name\":\"${ebookId}\", \"homepage\":\"https://www.gutenberg.org/ebooks/${ebookId}\", \"has_downloads\":false, \"has_wiki\":false, \"description\":\"Source for the Project Gutenberg edition of ${ebookName}, by ${ebookAuthor}\"}")
 
 	echo "${output}" | grep --quiet --ignore-case "201 Created"
 	if [ $? -eq 0 ]; then
-		git remote add github "git@github.com:gutenbergbooks/${ebookNumber}.git"
+		git remote add github "git@github.com:gutenbergbooks/${ebookId}.git"
 
 		#Set git to automatically push to Github
 		git config branch.master.remote github
@@ -150,7 +154,7 @@ do
 
 		sudo -u gutenbergbooks-github-bot git push --quiet github
 	else
-		echo "Couldn't create GitHub repo ${ebookNumber}:" 1>&2
+		echo "Couldn't create GitHub repo ${ebookId}:" 1>&2
 		die "${output}"
 	fi
 done
