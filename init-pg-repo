@@ -56,7 +56,7 @@ do
 
 	#Repo name will simply be the ebook number
 	#We guess the ebook number by looking at the first text file we see
-	ebookNumber=$(ls *.txt | grep -E --only-matching "^[0-9]+\.txt" | head -n 1 | sed "s/\.txt//g")
+	ebookNumber=$(ls *.txt | grep --extended-regexp --only-matching "^[0-9]+\.txt" | head -n 1 | sed "s/\.txt//g")
 
 	if [ "${ebookNumber}" = "" ]; then
 		die "Couldn't get ebook number for ${targetDir}; got ${ebookNumber}"
@@ -69,13 +69,13 @@ do
 	echo "Processing ebook #${ebookNumber}"
 
 	#Try to find the ebook name and author
-	ebookName=$(grep -E --only-matching "<dcterms:title>[^<]+?<\/dcterms:title>" "/data/crowd/cache/epub/${ebookNumber}/pg${ebookNumber}.rdf" | sed -E "s/<[^>]+?>//g")
+	ebookName=$(grep --extended-regexp --only-matching "<dcterms:title>[^<]+?<\/dcterms:title>" "/data/crowd/cache/epub/${ebookNumber}/pg${ebookNumber}.rdf" | sed -E "s/<[^>]+?>//g")
 
 	if [ "${ebookName}" = "" ]; then
 		die "Couldn't get ebook name"
 	fi
 
-	ebookAuthor=$(grep -E --only-matching "<pgterms:alias>[^<]+?<\/pgterms:alias>" "/data/crowd/cache/epub/${ebookNumber}/pg${ebookNumber}.rdf" | head -n 1 | sed -E "s/<[^>]+?>//g")
+	ebookAuthor=$(grep --extended-regexp --only-matching "<pgterms:alias>[^<]+?<\/pgterms:alias>" "/data/crowd/cache/epub/${ebookNumber}/pg${ebookNumber}.rdf" | head -n 1 | sed -E "s/<[^>]+?>//g")
 
 	if [ "${ebookAuthor}" = "" ]; then
 		ebookAuthor=$(xpath -e "string(//dcterms:creator//pgterms:name)" "/data/crowd/cache/epub/${ebookNumber}/pg${ebookNumber}.rdf" 2> /dev/null)
@@ -92,10 +92,10 @@ do
 	EOF
 
 	#Set the correct group for this repo
-	sudo chown -R gutenbergbooks-github-bot:committers "${targetDir}/"
+	sudo chown --recursive gutenbergbooks-github-bot:committers "${targetDir}/"
 
 	#Set the sticky bit so new files get created with the `committers` group
-	sudo chmod -R ug+ws "${targetDir}/"
+	sudo chmod --recursive ug+ws "${targetDir}/"
 
 	#Initialize the Git repo
 	#We have to pass the --shared option so that group filesystem permissions are respected
@@ -139,15 +139,15 @@ do
 	chmod +x "${targetDir}/.git/hooks/post-receive"
 
 	#Set new files Git created
-	sudo chown -R gutenbergbooks-github-bot:committers "${targetDir}/.git/"
+	sudo chown --recursive gutenbergbooks-github-bot:committers "${targetDir}/.git/"
 
 	#Set the sticky bit so new files get created with the `committers` group
-	sudo chmod -R ug+ws "${targetDir}/.git/"
+	sudo chmod --recursive ug+ws "${targetDir}/.git/"
 
 	#Create a GitHub repo
 	output=$(curl --silent --include --user "${githubUser}:${githubToken}" https://api.github.com/orgs/gutenbergbooks/repos --data "{\"name\":\"${ebookNumber}\", \"homepage\":\"https://www.gutenberg.org/ebooks/${ebookNumber}\", \"has_downloads\":false, \"has_wiki\":false, \"description\":\"Source for the Project Gutenberg edition of ${ebookName}, by ${ebookAuthor}\"}")
 
-	echo "${output}" | grep -q -i "201 Created"
+	echo "${output}" | grep --quiet --ignore-case "201 Created"
 	if [ $? -eq 0 ]; then
 		git remote add github "git@github.com:gutenbergbooks/${ebookNumber}.git"
 
