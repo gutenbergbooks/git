@@ -5,8 +5,7 @@ For more information on how PG Git repos are handled, and on how they interact w
 
 define(GITHUB_SECRET, '58c5250321d487f68e6138617ea57044530159e7'); //Set in the GitHub Gutenberg global webhook settings.
 define(WEBHOOK_LOG_FILE_PATH, '/data/git/webhooks-github.log'); //Must be writable by www-data user.
-define(GUTENBERG_REPO_ROOT, '/home/alex/'); //Include trailing slash!
-$ignoredRepos = array('tools'); //If we get GitHub push requests featuring these repos, silently ignore instead of returning an error.
+define(GUTENBERG_REPO_ROOT, '/data/htdocs/gutenberg/'); //Include trailing slash!
 
 //Helper functions and classes
 function WriteToLog($message){
@@ -75,14 +74,7 @@ try{
 
 				//Sanity check on ebook ID.  Ebook IDs must be numeric.
 				if(!ctype_digit($ebookId)){
-					//Are we looking at an ignored repo?
-					if(in_array($ebookId, $ignoredRepos)){
-						WriteToLog('Ignoring request for repo ' . $ebookId);
-						throw new NoopException();
-					}
-					else{
-						throw new WebhookException('Couldn\'t understand ebook ID: ' . $ebookId, $post);
-					}
+					throw new WebhookException('Couldn\'t understand ebook ID: ' . $ebookId, $post);
 				}
 
 				//Get the filesystem path for the ebook ID.
