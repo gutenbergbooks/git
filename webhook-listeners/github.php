@@ -65,7 +65,7 @@ try{
 				WriteToLog('Event type: push');
 
 				//Get the ebook ID.  Our repo names are simply the Gutenberg ebook ID number.
-				//PHP doesn't throw WebhookExceptions on invalid array indexes, so check that first.
+				//PHP doesn't throw exceptions on invalid array indexes, so check that first.
 				if(!array_key_exists('repository', $data) || !array_key_exists('name', $data['repository'])){
 					throw new WebhookException('Couldn\'t understand HTTP POST data', $post);
 				}
