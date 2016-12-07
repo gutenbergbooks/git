@@ -4,9 +4,9 @@ usage(){
 DESCRIPTION
 	Initialize a new Project Gutenberg ebook project repository in the target directories, and create corresponding repositories on GitHub.
 
-	This script must be run by a Unix user who has chmod permissions on the target directories.
+	This script must be run by a Unix user in the 'committers' group, who has chmod and chgrp permissions on the target directories.
 
-	A GitHub account is not required to run this script and create a GitHub repo.
+	A GitHub account is not required to run this script.
 
 USAGE
 	init-pg-repo DIRECTORY [DIRECTORY...]
@@ -105,7 +105,7 @@ do
 	#(Local user makes a local commit -> push commit to GitHub)
 	cat <<- EOF > "${targetDir}/.git/hooks/post-commit"
 	#!/bin/bash
-	git push --quiet github
+	sudo -u gutenbergbooks-github-bot git push --quiet github
 	EOF
 
 	#Do the same on post-receive
@@ -130,20 +130,20 @@ do
 	sudo chgrp -R committers "${targetDir}/"
 
 	#Set the sticky bit so new files get created with the `committers` group
-	sudo chmod -R g+s "${targetDir}/"
+	sudo chmod -R g+ws "${targetDir}/"
 
 	#Create a GitHub repo
 	output=$(curl --silent --include --user "gutenbergbooks-bot:${token}" https://api.github.com/orgs/gutenbergbooks/repos --data "{\"name\":\"${ebookNumber}\", \"homepage\":\"https://www.gutenberg.org/ebooks/${ebookNumber}\", \"has_downloads\":false, \"has_wiki\":false, \"description\":\"Source for the Project Gutenberg edition of ${ebookName}, by ${ebookAuthor}\"}")
 
 	echo "${output}" | grep -q -i "201 Created"
 	if [ $? -eq 0 ]; then
-		git remote add github "https://gutenbergbooks-bot:${token}@github.com/gutenbergbooks/${ebookNumber}.git"
+		git remote add github "git@github.com:gutenbergbooks/${ebookNumber}.git"
 
 		#Set git to automatically push to Github
 		git config branch.master.remote github
 		git config branch.master.merge refs/heads/master
 
-		git push --quiet github
+		sudo -u gutenbergbooks-github-bot git push --quiet github
 	else
 		echo "Error creating GitHub repo ${ebookNumber}:" 1>&2
 		die "${output}"

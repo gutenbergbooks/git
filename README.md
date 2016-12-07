@@ -8,7 +8,7 @@ To assist in persisting permissions, the `post-merge` and `post-checkout` hooks 
 
 ##Initializing a new Git repo
 
-Use the `/data/git/init-pg-repo` script to initialze one or more Git repos.  This script automatically creates the hooks described above, connects to GitHub to create the corresponding repository, and sets up remote branch information.  The script uses credentials for the `gutenbergbooks-bot` GitHub user (see below for details), so you don't need to have a GitHub account to run this script.  It does, however, require `chmod` permission (typically requiring `sudo`) in order to set repository permissions.
+Use the `/data/git/init-pg-repo` script to initialze one or more Git repos.  This script automatically creates the hooks described above, connects to GitHub to create the corresponding repository, and sets up remote branch information.  The script uses credentials for the `gutenbergbooks-bot` GitHub user (see below for details), so you don't need to have a GitHub account to run this script.  It does, however, require `chmod` and `chgrp` permission (typically requiring `sudo`) in order to set repository permissions.
 
 ##Quirks
 
@@ -20,10 +20,10 @@ Local repositories each have a corresponding GitHub repository, named after the 
 
 The `post-commit` and `post-receive` hooks are set to automatically execute `git push --quiet github` after every commit.  `post-commit` handles the case where a local Unix user is committing to our local repo, and `post-receive` handles the case where a remote, non-GitHub repo is pushing changes to our local repo.
 
-On GitHub, the `gutenbergbooks` organization has a webhook set up to ping https://crowd.pglaf.org/webhook-listeners/github.php (filesystem: `/data/crowd/webhook-listeners/github.php`) every time a commit is made on GitHub to an ebook repository.  This webhook locates the corresponding ebook repository on the pglaf.org filesystem and executes `git pull github` to synchronize the local repository with changes that have occured at GitHub.  Since the webhook runs as the `www-data` Unx user, it uses `sudo` to impersonate the local `github` Unix user to allow for repository write access during pull operations.  See `/etc/sudoers.d/github` for sudo configuration.
+On GitHub, the `gutenbergbooks` organization has a webhook set up to ping https://crowd.pglaf.org/webhook-listeners/github.php (filesystem: `/data/crowd/webhook-listeners/github.php`) every time a commit is made on GitHub to an ebook repository.  This webhook locates the corresponding ebook repository on the pglaf.org filesystem and impersonates the local `gutenbergbooks-github-bot` user to execute `git pull github` to synchronize the local repository with changes that have occured at GitHub.  Since the webhook runs as the `www-data` Unx user, it uses `sudo` to impersonate the local `gutenbergbooks-github-bot` Unix user to allow for repository write access during pull operations.  See `/etc/sudoers.d/github` for sudo configuration.
 
 The webhook listener keeps a log file, including detailed error dumps, at `/data/git/webhooks-github.log`.
 
-On Github, the `gutenbergbooks-bot` GitHub user is how we create, push, and pull to repositories.  The user has a personal access token set up that is hard-coded in the `init-pg-repo` script, and in the remote branch definition in *each individual ebook repository*.  We use this personal access token method because automating SSH connections via the `git` binary and over `sudo -u` is extremely difficult.
+On Github, the `gutenbergbooks-bot` GitHub user is how we create, push, and pull to repositories.  The user has a personal access token set up that is hard-coded in the `init-pg-repo` script for API access, and shares an SSH key with our local `gutenbergbooks-github-bot` user.  The local `gutenbergbooks-github-bot` Unix user has an SSH key set up that we use for raw Git connections.  For access to `gutenbergbooks-github-bot`'s SSH key, scripts impersonate the local `gutenbergbooks-github-bot` user using `sudo -u`.
 
-Note that in case of a security breach in which the personal access token is compromised and must be re-generated, the `init-pg-repo` script must be updated, and *each individual ebook repository's GitHub remote information* must be updated!
+Note that in case of a security breach in which the personal access token is compromised and must be re-generated, the `init-pg-repo` script must be updated.

@@ -5,7 +5,7 @@ For more information on how PG Git repos are handled, and on how they interact w
 
 define(GITHUB_SECRET, '58c5250321d487f68e6138617ea57044530159e7'); //Set in the GitHub Gutenberg global webhook settings.
 define(WEBHOOK_LOG_FILE_PATH, '/data/git/webhooks-github.log'); //Must be writable by www-data user.
-define(GUTENBERG_REPO_ROOT, '/data/htdocs/gutenberg/'); //Include trailing slash!
+define(GUTENBERG_REPO_ROOT, '/home/alex/'); //Include trailing slash!
 $ignoredRepos = array('tools'); //If we get GitHub push requests featuring these repos, silently ignore instead of returning an error.
 
 //Helper functions and classes
@@ -121,7 +121,7 @@ try{
 
 				//Now that we have the ebook filesystem path, pull the latest commit from GitHub.
 				//We use `sudo` to become the `github` Unix user, so that we have write permissions to the target, and so that we don't mess up ownership/group permissions on any new/modified files.
-				if(exec('sudo -u github git -C ' . escapeshellarg($dir) . ' pull github 2>&1; echo $?', $retval) != 0){
+				if(exec('sudo -u gutenbergbooks-github-bot git -C ' . escapeshellarg($dir) . ' pull github 2>&1; echo $?', $retval) != 0){
 					WriteToLog('Error pulling from GitHub.  Output: ' . implode("\n", $retval));
 					throw new WebhookException('Couldn\'t process ebook #' . $ebookId, $post);
 				}
