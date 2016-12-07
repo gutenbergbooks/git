@@ -115,28 +115,21 @@ do
 	#Set up some Git hooks to automate GitHub integration
 	#When we commit to this repo, push to GitHub automatically
 	#(Local user makes a local commit -> push commit to GitHub)
-	cat <<- EOF > "${targetDir}/.git/hooks/post-commit"
-	#!/bin/bash
-	sudo -u gutenbergbooks-github-bot git push --quiet github
-	EOF
+	ln -s /data/git/git-hooks/post-commit "${targetDir}/.git/hooks/post-commit"
+	chmod +x "${targetDir}/.git/hooks/post-commit"
 
 	#Do the same on post-receive
 	#(Remote non-GitHub user does git push into our local repo -> push changes to GitHub)
-	cp "${targetDir}/.git/hooks/post-commit" "${targetDir}/.git/hooks/post-receive"
+	ln -s /data/git/git-hooks/post-commit "${targetDir}/.git/hooks/post-receive"
+	chmod +x "${targetDir}/.git/hooks/post-receive"
 
 	#When we pull from remote, make sure Git didn't mess up our permissions
-	cat <<- EOF > "${targetDir}/.git/hooks/post-merge"
-	#!/bin/bash
-	chmod -R ug+ws .
-	EOF
+	ln -s /data/git/git-hooks/post-merge "${targetDir}/.git/hooks/post-merge"
+	chmod +x "${targetDir}/.git/hooks/post-merge"
 
 	#And when we switch branches too
-	cp "${targetDir}/.git/hooks/post-merge" "${targetDir}/.git/hooks/post-checkout"
-
-	chmod +x "${targetDir}/.git/hooks/post-commit"
-	chmod +x "${targetDir}/.git/hooks/post-merge"
+	ln -s /data/git/git-hooks/post-merge "${targetDir}/.git/hooks/post-checkout"
 	chmod +x "${targetDir}/.git/hooks/post-checkout"
-	chmod +x "${targetDir}/.git/hooks/post-receive"
 
 	#Set new files Git created
 	sudo chown --recursive gutenbergbooks-github-bot:committers "${targetDir}/.git/"
@@ -157,7 +150,7 @@ do
 
 		sudo -u gutenbergbooks-github-bot git push --quiet github
 	else
-		echo "Error creating GitHub repo ${ebookNumber}:" 1>&2
+		echo "Couldn't create GitHub repo ${ebookNumber}:" 1>&2
 		die "${output}"
 	fi
 done
