@@ -25,6 +25,11 @@ dirs=""
 githubUser="gutenbergbooks-github-bot"
 githubToken="497a6a3a2075f18a3aeea6d7bd01fa79759a7f3a" #Personal access token for the GitHub gutenbergbooks-github-bot user
 
+groups | grep --quiet "committers"
+if [ $? -ne 0 ]; then
+	die "You must be in the \"committers\" Unix group to run this script"
+fi
+
 while [ $# -gt 0 ]
 do
 	case "$1" in
