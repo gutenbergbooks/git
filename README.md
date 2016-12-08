@@ -8,7 +8,7 @@ To assist in persisting permissions, the `post-merge` and `post-checkout` hooks 
 
 ##Initializing a new Git repo
 
-Use the `/data/git/init-pg-repo` script to initialize one or more Git repos.  This script must be run by someone in the `commmitters` Unix group.  It automatically creates the hooks described above, connects to GitHub to create the corresponding repository, and sets up remote branch information.  The script uses credentials for the `gutenbergbooks-github-bot` GitHub user (see below for details), so you don't need to have a GitHub account to run this script.  It does, however, require `chmod` and `chgrp` permission (typically requiring `sudo`) in order to set repository permissions.
+Use the `/data/git/init-pg-repo` script to initialize one or more Git repos.  This script must be run by someone in the `committers` Unix group.  It automatically creates the hooks described above, connects to GitHub to create the corresponding repository, and sets up remote branch information.  The script uses credentials for the `gutenbergbooks-github-bot` GitHub user (see below for details), so you don't need to have a GitHub account to run this script.  It does, however, require `chmod` and `chgrp` permission (typically requiring `sudo`) in order to set repository permissions.
 
 ##Quirks
 
