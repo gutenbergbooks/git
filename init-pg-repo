@@ -96,7 +96,8 @@ do
 	sudo chown --recursive gutenbergbooks-github-bot:committers "${targetDir}/"
 
 	#Set the sticky bit so new files get created with the `committers` group
-	sudo chmod --recursive ug+ws "${targetDir}/"
+	sudo chmod --recursive ug+w "${targetDir}/"
+	sudo chmod --recursive g+s "${targetDir}/"
 
 	#Initialize the Git repo
 	#We have to pass the --shared option so that group filesystem permissions are respected
@@ -139,7 +140,8 @@ do
 	sudo chown --recursive gutenbergbooks-github-bot:committers "${targetDir}/.git/"
 
 	#Set the sticky bit so new files get created with the `committers` group
-	sudo chmod --recursive ug+ws "${targetDir}/.git/"
+	sudo chmod --recursive ug+w "${targetDir}/.git/"
+	sudo chmod --recursive g+s "${targetDir}/.git/"
 
 	#Create a GitHub repo
 	output=$(curl --silent --include --user "${githubUser}:${githubToken}" https://api.github.com/orgs/gutenbergbooks/repos --data "{\"name\":\"${ebookId}\", \"homepage\":\"https://www.gutenberg.org/ebooks/${ebookId}\", \"has_downloads\":false, \"has_wiki\":false, \"description\":\"Source for the Project Gutenberg edition of ${ebookName}, by ${ebookAuthor}\"}")
