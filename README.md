@@ -16,7 +16,7 @@ Since the Gutenberg ebook build workflow is long-established, we can't use bare 
 
 ##Project Gutenberg and GitHub
 
-Local repositories each have a corresponding GitHub repository, named after the ebook ID number, and a remote branch, named `github`, linked to that GitHub repository.  Thus, `git push github` pushes changes from the local repository to the corresponding GitHub repository.  Pushing and pulling is done over SSH using the local `gutenbergbooks-github-bot` Unix user's SSH credentials, so a GitHub account is not necessary.
+Local repositories each have a corresponding GitHub repository, named after the ebook ID number, and a remote, named `github`, linked to that GitHub repository.  Thus, `git push github` pushes changes from the local repository to the corresponding GitHub repository.  Pushing and pulling is done over SSH using the local `gutenbergbooks-github-bot` Unix user's SSH credentials, so a GitHub account is not necessary.
 
 The `post-commit` and `post-receive` hooks are set to automatically execute `git push --quiet github` after every commit.  `post-commit` handles the case where a local Unix user is committing to our local repo, and `post-receive` handles the case where a remote, non-GitHub repo is pushing changes to our local repo.
 
@@ -24,6 +24,6 @@ On GitHub, the `gutenbergbooks` organization has a webhook set up to ping https:
 
 The webhook listener keeps a log file, including detailed error dumps, at `/data/git/webhooks-github.log`.
 
-On Github, the `gutenbergbooks-github-bot` GitHub user is how we create, push, and pull to repositories.  The user has a personal access token set up that is hard-coded in the `init-pg-repo` script for API access, and shares an SSH public key with the local `gutenbergbooks-github-bot` Unix user.  For access to the local `gutenbergbooks-github-bot` Unix user's SSH key, scripts impersonate that  user using `sudo -u`.
+On Github, the `gutenbergbooks-github-bot` GitHub user is how we create, push, and pull to repositories.  The user has a personal access token, stored in `/data/crowd/secrets/`, for API access, and shares an SSH public key with the local `gutenbergbooks-github-bot` Unix user.  When connecting to GitHub, local Unix users must impersonate `gutenbergbooks-github-bot` using `sudo -u` so they can get access to `gutenbergbooks-github-bot`'s SSH key.
 
 Note that in case of a security breach in which the `gutenbergbooks-github-bot` GitHub user's personal access token is compromised and must be re-generated, the corresponding file in the `secrets/` folder has to be updated with the new token.
