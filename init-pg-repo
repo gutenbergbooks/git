@@ -88,7 +88,6 @@ do
 
 	#Create a .gitignore file
 	cat <<- EOF > "${targetDir}/.gitignore"
-	old
 	*.zip
 	EOF
 
@@ -112,6 +111,16 @@ do
 
 	if [ $? -ne 0 ]; then
 		die "Couldn't perform Git initial commit"
+	fi
+
+	#Some ebooks have an "old" directory, which we can remove to prevent confusion.
+	if [ -d "old" ]; then
+		echo "Removing \"old\" and committing..."
+		rm -rf "old"
+
+		git add --all
+		git commit --quiet --message "Remove \"old\" directory"
+		git tag "old"
 	fi
 
 	#Remove unused hooks
