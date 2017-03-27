@@ -11,7 +11,7 @@ DESCRIPTION
 	A GitHub account is not required to run this script.
 
 USAGE
-	init-pg-repo EBOOKID [EBOOKID...]
+	init-pg-repo [-v,--verbose] EBOOKID [EBOOKID...]
 EOF
 	exit
 }
@@ -27,6 +27,7 @@ ebookIds=""
 gutenbergRepoRoot="/data/htdocs/gutenberg/" #Include trailing slash!
 githubUser="gutenbergbooks-github-bot"
 githubToken=$(cat "/data/git/secrets/gutenbergbooks-github-bot-authentication-token") #Personal access token for the GitHub gutenbergbooks-github-bot user
+verbose="false"
 
 groups | grep --quiet "committers"
 if [ $? -ne 0 ]; then
@@ -36,6 +37,9 @@ fi
 while [ $# -gt 0 ]
 do
 	case "$1" in
+		-v|--verbose)
+			verbose="true"
+		;;
 		*)
 			ebookIds=$(printf "%s\n%s" "${ebookIds}" "$1")
 		;;
@@ -47,6 +51,10 @@ printf "%s\n" "${ebookIds}" | while IFS= read -r ebookId;
 do
 	if [ "${ebookId}" = "" ]; then
 		continue
+	fi
+
+	if [ "${verbose}" = "true" ]; then
+		echo "Processing ebook #${ebookId}"
 	fi
 
 	if ! [[ "${ebookId}" =~ ^[0-9]+$ ]]; then
@@ -66,8 +74,6 @@ do
 	if [ -d ".git" ]; then
 		die "Already a Git repo: ${targetDir}"
 	fi
-
-	echo "Processing ebook #${ebookId}"
 
 	#Try to find the ebook name and author
 	ebookName=$(grep --extended-regexp --only-matching "<dcterms:title>[^<]+?<\/dcterms:title>" "/data/crowd/cache/epub/${ebookId}/pg${ebookId}.rdf" | sed -E "s/<[^>]+?>//g")
@@ -115,7 +121,9 @@ do
 
 	#Some ebooks have an "old" directory, which we can remove to prevent confusion.
 	if [ -d "old" ]; then
-		echo "Removing \"old\" and committing..."
+		if [ "${verbose}" = "true" ]; then
+			echo "Removing \"old\" and committing..."
+		fi
 		rm -rf "old"
 
 		git add --all
