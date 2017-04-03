@@ -83,12 +83,12 @@ do
 	targetDir="${gutenbergRepoRoot}${targetDir}${ebookId}"
 
 	if [ ! -d "${targetDir}" ]; then
-		echo "Couldn't locate directory for ebook #${ebookId} in ${targetDir}" 1>&2
+		echo "Error: Couldn't locate directory for ebook #${ebookId} in ${targetDir}" 1>&2
 		continue
 	fi
 
 	if [ ! -w "${targetDir}" ]; then
-		echo "No write permission for ${targetDir}" 1>&2
+		echo "Error: No write permission for ${targetDir}" 1>&2
 		continue
 	fi
 
@@ -103,7 +103,7 @@ do
 	ebookName=$(grep --extended-regexp --only-matching "<dcterms:title>[^<]+?<\/dcterms:title>" "/data/crowd/cache/epub/${ebookId}/pg${ebookId}.rdf" | sed -E "s/<[^>]+?>//g")
 
 	if [ "${ebookName}" = "" ]; then
-		echo "Couldn't get ebook name" 1>&2
+		echo "Error: Couldn't get ebook name" 1>&2
 		continue
 	fi
 
@@ -114,7 +114,7 @@ do
 	fi
 
 	if [ "${ebookAuthor}" = "" ]; then
-		echo "Couldn't get ebook author" 1>&2
+		echo "Error: Couldn't get ebook author" 1>&2
 		continue
 	fi
 
@@ -199,7 +199,7 @@ do
 
 		sudo -u gutenbergbooks-github-bot git push --quiet github
 	else
-		echo "Couldn't create GitHub repo ${ebookId}:" 1>&2
+		echo "Error: Couldn't create GitHub repo ${ebookId}:" 1>&2
 		die "${output}"
 	fi
 done
