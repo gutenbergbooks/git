@@ -30,6 +30,8 @@ gutenbergRepoRoot="/data/htdocs/gutenberg/" #Include trailing slash!
 githubUser="gutenbergbooks-github-bot"
 githubToken=$(cat "/data/git/secrets/gutenbergbooks-github-bot-authentication-token") #Personal access token for the GitHub gutenbergbooks-github-bot user
 verbose="false"
+botAuthorString="gutenbergbooks-github-bot"
+botEmailString="gutenbergbooks-github-bot@dante.pglaf.org"
 inputFile=""
 
 groups | grep --quiet "committers"
@@ -139,7 +141,12 @@ do
 
 	git add --all
 
-	git commit --quiet --message "Initial commit"
+	#We need to export this for Git, because the commit "author" and the commit "committer" are two separate concepts.
+	#We want both the author and the committer to be our bot.
+	export GIT_COMMITTER_NAME="${botAuthorString}"
+	export GIT_COMMITTER_EMAIL="${botEmailString}"
+
+	git commit --quiet --author="${botAuthorString} <${botEmailString}>" --message "Initial commit"
 
 	if [ $? -ne 0 ]; then
 		die "Couldn't perform Git initial commit: ${targetDir}"
@@ -153,7 +160,7 @@ do
 		rm -rf "old"
 
 		git add --all
-		git commit --quiet --message "Remove \"old\" directory"
+		git commit --quiet --author="${botAuthorString} <${botEmailString}>" --message "Remove \"old\" directory"
 		git tag "old"
 	fi
 
@@ -187,6 +194,9 @@ do
 	sudo chmod --recursive g+s "${targetDir}/.git/"
 
 	#Create a GitHub repo
+	if [ "${verbose}" = "true" ]; then
+		echo "Creating repo on GitHub..."
+	fi
 	output=$(curl --silent --include --user "${githubUser}:${githubToken}" https://api.github.com/orgs/gutenbergbooks/repos --data "{\"name\":\"${ebookId}\", \"homepage\":\"https://www.gutenberg.org/ebooks/${ebookId}\", \"has_downloads\":false, \"has_wiki\":false, \"description\":\"Source for the Project Gutenberg edition of ${ebookName}, by ${ebookAuthor}\"}")
 
 	echo "${output}" | grep --quiet --ignore-case "201 Created"
