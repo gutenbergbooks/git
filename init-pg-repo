@@ -13,7 +13,7 @@ DESCRIPTION
 USAGE
 	init-pg-repo [-v,--verbose] [-f,--file=FILENAME] EBOOKID [EBOOKID...]
 
-	With -f, read ebook IDs from a file, one ID per line.
+	With -f, read ebook IDs from a file, one ID per line.  Can be combined with ebook IDs passed via command line parameters.
 EOF
 	exit
 }
@@ -84,6 +84,11 @@ do
 
 	if [ ! -d "${targetDir}" ]; then
 		echo "Couldn't locate directory for ebook #${ebookId} in ${targetDir}" 1>&2
+		continue
+	fi
+
+	if [ ! -w "${targetDir}" ]; then
+		echo "No write permission for ${targetDir}" 1>&2
 		continue
 	fi
 
