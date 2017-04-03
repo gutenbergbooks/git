@@ -11,7 +11,9 @@ DESCRIPTION
 	A GitHub account is not required to run this script.
 
 USAGE
-	init-pg-repo [-v,--verbose] EBOOKID [EBOOKID...]
+	init-pg-repo [-v,--verbose] [-f,--file=FILENAME] EBOOKID [EBOOKID...]
+
+	With -f, read ebook IDs from a file, one ID per line.
 EOF
 	exit
 }
@@ -28,6 +30,7 @@ gutenbergRepoRoot="/data/htdocs/gutenberg/" #Include trailing slash!
 githubUser="gutenbergbooks-github-bot"
 githubToken=$(cat "/data/git/secrets/gutenbergbooks-github-bot-authentication-token") #Personal access token for the GitHub gutenbergbooks-github-bot user
 verbose="false"
+inputFile=""
 
 groups | grep --quiet "committers"
 if [ $? -ne 0 ]; then
@@ -40,12 +43,25 @@ do
 		-v|--verbose)
 			verbose="true"
 		;;
+		-f=*|--file=*)
+			inputFile="$(echo "${1}" | sed 's/[-a-zA-Z0-9]*=//')"
+		;;
 		*)
 			ebookIds=$(printf "%s\n%s" "${ebookIds}" "$1")
 		;;
 	esac
 	shift
 done
+
+if [ "${inputFile}" != "" ]; then
+	if [ ! -f "${inputFile}" ]; then
+		die "Couldn't read input file: ${inputFile}"
+	fi
+
+	while read line; do
+		ebookIds=$(printf "%s\n%s" "${ebookIds}" "$line")
+	done < "${inputFile}"
+fi
 
 printf "%s\n" "${ebookIds}" | while IFS= read -r ebookId;
 do
