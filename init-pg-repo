@@ -58,7 +58,8 @@ do
 	fi
 
 	if ! [[ "${ebookId}" =~ ^[0-9]+$ ]]; then
-		die "Ebook ID is not a number: ${ebookId}"
+		echo "Error: Ebook ID is not a number: ${ebookId}" 1>&2
+		continue
 	fi
 
 	#Generate a path to the target ebook's home directory
@@ -66,20 +67,23 @@ do
 	targetDir="${gutenbergRepoRoot}${targetDir}${ebookId}"
 
 	if [ ! -d "${targetDir}" ]; then
-		die "Couldn't locate directory for ebook #${ebookId} in ${targetDir}"
+		echo "Couldn't locate directory for ebook #${ebookId} in ${targetDir}" 1>&2
+		continue
 	fi
 
 	cd "${targetDir}"
 
 	if [ -d ".git" ]; then
-		die "Already a Git repo: ${targetDir}"
+		echo "Error: Already a Git repo: ${targetDir}" 1>&2
+		continue
 	fi
 
 	#Try to find the ebook name and author
 	ebookName=$(grep --extended-regexp --only-matching "<dcterms:title>[^<]+?<\/dcterms:title>" "/data/crowd/cache/epub/${ebookId}/pg${ebookId}.rdf" | sed -E "s/<[^>]+?>//g")
 
 	if [ "${ebookName}" = "" ]; then
-		die "Couldn't get ebook name"
+		echo "Couldn't get ebook name" 1>&2
+		continue
 	fi
 
 	ebookAuthor=$(grep --extended-regexp --only-matching "<pgterms:alias>[^<]+?<\/pgterms:alias>" "/data/crowd/cache/epub/${ebookId}/pg${ebookId}.rdf" | head -n 1 | sed -E "s/<[^>]+?>//g")
@@ -89,7 +93,8 @@ do
 	fi
 
 	if [ "${ebookAuthor}" = "" ]; then
-		die "Couldn't get ebook author"
+		echo "Couldn't get ebook author" 1>&2
+		continue
 	fi
 
 	#Create a .gitignore file
@@ -116,7 +121,7 @@ do
 	git commit --quiet --message "Initial commit"
 
 	if [ $? -ne 0 ]; then
-		die "Couldn't perform Git initial commit"
+		die "Couldn't perform Git initial commit: ${targetDir}"
 	fi
 
 	#Some ebooks have an "old" directory, which we can remove to prevent confusion.
