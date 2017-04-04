@@ -26,7 +26,7 @@ if [ $# -eq 1 ]; then if [ "$1" = "--help" -o "$1" = "-h" ]; then usage; fi fi
 require "xpath" "Try: apt-get install libxml-xpath-perl"
 
 ebookIds=""
-gutenbergRepoRoot="/data/htdocs/gutenberg/" #Include trailing slash!
+gutenbergRepoRoot="/data/crowd/gutenberg/" #Include trailing slash!
 githubUser="gutenbergbooks-github-bot"
 githubToken=$(cat "/data/git/secrets/gutenbergbooks-github-bot-authentication-token") #Personal access token for the GitHub gutenbergbooks-github-bot user
 verbose="false"
