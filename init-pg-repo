@@ -31,7 +31,7 @@ githubUser="gutenbergbooks-github-bot"
 githubToken=$(cat "/data/git/secrets/gutenbergbooks-github-bot-authentication-token") #Personal access token for the GitHub gutenbergbooks-github-bot user
 verbose="false"
 botAuthorString="gutenbergbooks-github-bot"
-botEmailString="gutenbergbooks-github-bot@dante.pglaf.org"
+botEmailString="gutenbergbooks-github-bot@pglaf.org"
 inputFile=""
 
 groups | grep --quiet "committers"
