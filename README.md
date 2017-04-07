@@ -1,4 +1,4 @@
-#Outline of source control at Project Gutenberg
+# Outline of source control at Project Gutenberg
 
 Each ebook is its own Git repository.
 
@@ -6,15 +6,15 @@ Repositories have their group set to the `committers` Unix group, with group wri
 
 To assist in persisting permissions, the `post-merge` and `post-checkout` hooks reset group write permissions.
 
-##Initializing a new Git repo
+## Initializing a new Git repo
 
 Use the `/data/git/init-pg-repo` script to initialize one or more Git repos.  This script must be run by someone in the `committers` Unix group.  It automatically creates the hooks described above, connects to GitHub to create the corresponding repository, and sets up remote branch information.  The script uses credentials for the `gutenbergbooks-github-bot` GitHub user (see below for details), so you don't need to have a GitHub account to run this script.  It does, however, require `chmod` and `chgrp` permission (typically requiring `sudo`) in order to set repository permissions.
 
-##Quirks
+## Quirks
 
 Since the Gutenberg ebook build workflow is long-established, we can't use bare Git repositories on our ebooks.  So, to allow contributors not using GitHub to push changes back our local repositories (for example via SSH), each repository is initialized with `git config receive.denyCurrentBranch updateInstead`.
 
-##Project Gutenberg and GitHub
+## Project Gutenberg and GitHub
 
 Local repositories each have a corresponding GitHub repository, named after the ebook ID number, and a remote, named `github`, linked to that GitHub repository.  Thus, `git push github` pushes changes from the local repository to the corresponding GitHub repository.  Pushing and pulling is done over SSH using the local `gutenbergbooks-github-bot` Unix user's SSH credentials, so a GitHub account is not necessary.
 
